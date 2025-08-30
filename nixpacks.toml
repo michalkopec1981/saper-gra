@@ -6,7 +6,4 @@ providers = ["python"]
 
 # Definiujemy fazę instalacji (setup).
 [phases.setup]
-# Lista dodatkowych pakietów systemowych, które Railway ma zainstalować.
-# Dodajemy poprawną nazwę pakietu "postgresql_16".
-pkgs = ["gcc", "postgresql_16"]
-
+nixPkgs = ["gcc", "postgresql_16", "python39"]
