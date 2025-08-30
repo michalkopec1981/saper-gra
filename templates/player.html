@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Gracz - Saper{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div id="name-input-section" class="text-center">
+        <h2>Witaj w grze Saper!</h2>
+        <div class="mb-3">
+            <label for="player-name" class="form-label">Podaj swoje imię:</label>
+            <input type="text" class="form-control" id="player-name" required>
+        </div>
+        <button class="btn btn-primary">Rozpocznij grę</button>
+    </div>
+
+    <div id="quiz-section" class="text-center" style="display: none;">
+        <h3>Pytanie:</h3>
+        <p id="question" class="lead"></p>
+        <div id="answers" class="d-grid gap-2 mt-3">
+            <!-- Odpowiedzi będą wstawiane tutaj dynamicznie -->
+        </div>
+    </div>
+
+    <div id="message-section" class="alert alert-info mt-3" style="display: none;">
+        <!-- Powiadomienia dla gracza -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInputSection = document.getElementById('name-input-section');
+    const quizSection = document.getElementById('quiz-section');
+    const messageSection = document.getElementById('message-section');
+    const playerNameInput = document.getElementById('player-name');
+    const startButton = nameInputSection.querySelector('button');
+    const questionEl = document.getElementById('question');
+    const answersEl = document.getElementById('answers');
+
+    const QR_CODE = "{{ qr_code }}";
+    let playerId = localStorage.getItem('saperPlayerId');
+    let playerName = localStorage.getItem('saperPlayerName');
+    let currentQuestionId = null;
+
+    // --- Funkcje pomocnicze ---
+    function showMessage(text, type = 'info', duration = 0) {
+        messageSection.textContent = text;
+        messageSection.className = `alert alert-${type} mt-3`;
+        messageSection.style.display = 'block';
+        quizSection.style.display = 'none';
+        nameInputSection.style.display = 'none';
+
+        if (duration > 0) {
+            setTimeout(() => {
+                messageSection.style.display = 'none';
+            }, duration);
+        }
+    }
+
+    // --- Logika gry ---
+    function handleScanResponse(data) {
+        if (data.status === 'question') {
+            nameInputSection.style.display = 'none';
+            messageSection.style.display = 'none';
+            quizSection.style.display = 'block';
+            displayQuestion(data.question);
+        } else {
+            // Handle messages like "wait" or "info"
+            showMessage(data.message, data.status === 'wait' ? 'warning' : 'info');
+        }
+    }
+
+    function displayQuestion(question) {
+        currentQuestionId = question.id;
+        questionEl.textContent = question.text;
+        answersEl.innerHTML = '';
+        const options = ['a', 'b', 'c'];
+        options.forEach(opt => {
+            if (question[`option_${opt}`]) {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-outline-secondary';
+                btn.textContent = question[`option_${opt}`];
+                btn.dataset.answer = opt;
+                answersEl.appendChild(btn);
+            }
+        });
+    }
+
+    async function registerAndScan() {
+        const name = playerNameInput.value.trim();
+        if (!name) {
+            alert('Proszę podać imię.');
+            return;
+        }
+
+        const response = await fetch('/api/register_player', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name })
+        });
+        
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(`Błąd: ${data.error}`);
+            return;
+        }
+        
+        playerId = data.id;
+        playerName = data.name;
+        localStorage.setItem('saperPlayerId', playerId);
+        localStorage.setItem('saperPlayerName', playerName);
+        await scanQrCode();
+    }
+
+    async function scanQrCode() {
+        const response = await fetch('/api/scan_qr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ player_id: playerId, qr_code: QR_CODE })
+        });
+
+        // --- FIX ---
+        // This block now handles the invalid player ID error.
+        if (response.status === 401) {
+            // Player ID is invalid, force re-registration
+            localStorage.removeItem('saperPlayerId');
+            localStorage.removeItem('saperPlayerName');
+            showMessage('Twoja sesja wygasła. Zarejestruj się ponownie.', 'warning');
+            
+            // Show the name input form after a short delay
+            setTimeout(() => {
+                nameInputSection.style.display = 'block';
+                messageSection.style.display = 'none';
+                quizSection.style.display = 'none';
+            }, 2500);
+            return;
+        }
+
+        const data = await response.json();
+        handleScanResponse(data);
+    }
+
+    // --- Event Listeners ---
+    startButton.addEventListener('click', registerAndScan);
+
+    answersEl.addEventListener('click', async (event) => {
+        if (event.target.tagName === 'BUTTON') {
+            const answer = event.target.dataset.answer;
+            const response = await fetch('/api/answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ player_id: playerId, question_id: currentQuestionId, answer: answer })
+            });
+            const data = await response.json();
+            if (data.correct) {
+                showMessage(`Dobrze! Zdobywasz 10 punktów i literę: ${data.letter}`, 'success');
+            } else {
+                showMessage('Zła odpowiedź. Tracisz 5 punktów.', 'warning');
+            }
+        }
+    });
+
+    // --- Inicjalizacja ---
+    if (playerId && playerName) {
+        nameInputSection.style.display = 'none';
+        scanQrCode();
+    } else {
+        nameInputSection.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

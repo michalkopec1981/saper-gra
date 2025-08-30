@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Ekran Gry - Saper{% endblock %}
+
+{% block content %}
+    <h1 class="text-center">Postęp Gry</h1>
+    
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <h2>Ranking</h2>
+            <ul id="leaderboard" class="list-group">
+                <!-- Ranking będzie aktualizowany na żywo -->
+                <li class="list-group-item">Oczekiwanie na graczy...</li>
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h2>Hasło</h2>
+            <p id="password-display" class="fs-3 text-monospace">_ _ _ _ _ _ _ _</p>
+            <h2 class="mt-4">Czas do końca</h2>
+            <p id="timer" class="fs-1">00:00</p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Import biblioteki Socket.IO -->
+<script src="https://cdn.socket.io/4.5.2/socket.io.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Nawiązanie połączenia z serwerem Socket.IO
+        const socket = io();
+
+        // Pobranie elementów DOM do aktualizacji
+        const leaderboardEl = document.getElementById('leaderboard');
+        const passwordEl = document.getElementById('password-display');
+        const timerEl = document.getElementById('timer');
+
+        // Nasłuchiwanie na zdarzenie aktualizacji rankingu
+        socket.on('leaderboard_update', function(players) {
+            leaderboardEl.innerHTML = ''; // Wyczyść starą listę
+            if (players.length === 0) {
+                leaderboardEl.innerHTML = '<li class="list-group-item">Brak graczy w rankingu.</li>';
+                return;
+            }
+            // Sortowanie graczy po wyniku malejąco i wyświetlanie
+            players.sort((a, b) => b.score - a.score).forEach(player => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    <span>${player.name}</span>
+                    <span class="badge bg-primary rounded-pill">${player.score} pkt</span>
+                `;
+                leaderboardEl.appendChild(li);
+            });
+        });
+
+        // Nasłuchiwanie na zdarzenie aktualizacji hasła
+        socket.on('password_update', function(passwordState) {
+            // Dodaje spacje pomiędzy znakami dla lepszej czytelności
+            passwordEl.textContent = passwordState.split('').join(' ');
+        });
+
+        // Nasłuchiwanie na zdarzenie "tyknięcia" zegara
+        socket.on('timer_tick', function(data) {
+            const timeLeft = Math.floor(data.time_left);
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            // Formatowanie czasu do postaci MM:SS
+            timerEl.textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        });
+
+        // Nasłuchiwanie na ogólną aktualizację stanu gry przy połączeniu
+        socket.on('game_state_update', function(state) {
+            if (state.password) {
+                 passwordEl.textContent = state.password.split('').join(' ');
+            }
+        });
+    });
+</script>
+{% endblock %}

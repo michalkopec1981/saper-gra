@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Podgląd Kodów QR{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    /* Style for printing */
+    @media print {
+        /* Hide everything by default */
+        body * {
+            visibility: hidden;
+        }
+        /* Make the printable element and its children visible */
+        .printable, .printable * {
+            visibility: visible;
+        }
+        /* Position the printable element to take up the page */
+        .printable {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 50vh; /* Approx half A4 page */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            -webkit-print-color-adjust: exact; /* Ensures colors are printed */
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .card-footer {
+            display: none; /* Hide the print button itself when printing */
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Podgląd Kodów QR</h1>
+    <p class="text-center text-muted">Te kody prowadzą do adresów URL serwera. Użyj ich do wydruku.</p>
+    
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4" id="qr-container">
+        {% for qr in qrcodes %}
+        <div class="col">
+            <div class="card h-100 text-center">
+                <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                    <!-- Ten div będzie kontenerem na kod QR -->
+                    <div class="qr-code-image" data-text="{{ url_for('player_view', qr_code=qr.code_identifier, _external=True) }}" data-is-red="{{ qr.is_red|lower }}"></div>
+                    <h5 class="card-title mt-3">{{ qr.code_identifier }}</h5>
+                    {% if qr.is_red %}
+                        <span class="badge bg-danger">Czerwony</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Biały</span>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent border-top-0 py-3">
+                    <button class="btn btn-sm btn-outline-secondary print-qr-btn">Drukuj</button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-warning text-center" role="alert">
+                Brak kodów QR do wyświetlenia. Rozpocznij grę w panelu organizatora, aby je wygenerować.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Biblioteka do generowania kodów QR po stronie klienta -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const qrCodeElements = document.querySelectorAll('.qr-code-image');
+    qrCodeElements.forEach(el => {
+        const text = el.dataset.text;
+        const isRed = el.dataset.isRed === 'true';
+        
+        new QRCode(el, {
+            text: text,
+            width: 180,
+            height: 180,
+            colorDark: isRed ? "#dc3545" : "#000000", // Czerwony dla kodów "red"
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    });
+
+    // Add print functionality
+    const printButtons = document.querySelectorAll('.print-qr-btn');
+    printButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const cardToPrint = button.closest('.card');
+            cardToPrint.classList.add('printable');
+            window.print();
+            cardToPrint.classList.remove('printable');
+        });
+    });
+});
+</script>
+{% endblock %}

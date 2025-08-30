@@ -1,0 +1,427 @@
+{% extends 'base.html' %}
+
+{% block title %}Panel Organizatora - Saper{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    /* Style for the Tetris test window in the host panel */
+    #tetris-preview-canvas {
+        border: 2px solid #333;
+        background-color: #f0f0f0;
+        display: block;
+        margin: 1rem auto 0;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Panel Organizatora</h1>
+    
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4" id="organizerTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="game-tab" data-bs-toggle="tab" data-bs-target="#game" type="button">Ustawienia Gry</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="players-tab" data-bs-toggle="tab" data-bs-target="#players" type="button">Gracze</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="competitions-tab" data-bs-toggle="tab" data-bs-target="#competitions" type="button">Konkurencje</button>
+        </li>
+    </ul>
+    
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Game Settings Tab -->
+        <div class="tab-pane fade show active" id="game" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ustawienia Gry i Czasu</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Kody QR</h6>
+                            <div class="mb-3">
+                                <label for="white-codes-count" class="form-label">Liczba białych kodów QR:</label>
+                                <input type="number" class="form-control" id="white-codes-count" value="5" min="1" max="100">
+                            </div>
+                            <div class="mb-3">
+                                <label for="red-codes-count" class="form-label">Liczba "czerwonych" kodów QR:</label>
+                                <input type="number" class="form-control" id="red-codes-count" value="5" min="0" max="100">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Czas Gry</h6>
+                            <div class="mb-3">
+                                <label for="minutes-input" class="form-label">Czas gry w minutach:</label>
+                                <input type="number" class="form-control" id="minutes-input" placeholder="Minuty" min="1" value="10">
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-muted">Pozostało:</span>
+                                    <span class="fs-4" id="game-timer">00:00</span>
+                                </div>
+                                <button type="button" class="btn btn-warning" id="pause-timer" disabled>Pauza</button>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <div class="d-grid gap-2 d-md-flex justify-content-center">
+                        <button id="start-game" class="btn btn-success btn-lg me-md-2">Start Gry</button>
+                        <button id="stop-game" class="btn btn-danger btn-lg" disabled>Stop Gry</button>
+                        <button id="preview-qrcodes" class="btn btn-info btn-lg ms-md-auto">Podgląd kodów QR</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Players Tab -->
+        <div class="tab-pane fade" id="players" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Lista Graczy</h5>
+                    <button class="btn btn-primary btn-sm" id="refresh-players">Odśwież</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="players-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nazwa</th>
+                                    <th>Punkty</th>
+                                    <th>Ostrzeżenia</th>
+                                    <th>Akcje</th>
+                                </tr>
+                            </thead>
+                            <tbody id="players-list">
+                                <!-- Players will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Competitions Tab -->
+        <div class="tab-pane fade" id="competitions" role="tabpanel">
+            <div class="row">
+                <!-- Minigames Section -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Minigry</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6>Tetris</h6>
+                                    <p class="text-muted mb-0 small">Aktywuj, aby gra była dostępna dla graczy po zeskanowaniu kodów `bialy1`, `bialy2`, `bialy3`.</p>
+                                </div>
+                                <div>
+                                    <button class="btn btn-secondary me-2" id="test-tetris">Test</button>
+                                    <button class="btn btn-outline-success" id="toggle-tetris">Aktywuj</button>
+                                </div>
+                            </div>
+                            <div id="tetris-preview-container" style="display: none; text-align: center;">
+                                <canvas id="tetris-preview-canvas" width="240" height="400"></canvas>
+                                <p class="mt-2 text-muted small">Sterowanie: Strzałki</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Dodaj Pytanie</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="add-question-form">
+                                <div class="mb-3">
+                                    <label for="question-text" class="form-label">Treść pytania</label>
+                                    <textarea class="form-control" id="question-text" rows="3" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="letter-to-reveal" class="form-label">Litera do odkrycia</label>
+                                    <input type="text" class="form-control" id="letter-to-reveal" maxlength="1" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Odpowiedzi</label>
+                                    <div id="answers-container"></div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="add-answer">Dodaj odpowiedź</button>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Zapisz pytanie</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Lista Pytań</h5>
+                            <button class="btn btn-primary btn-sm" id="refresh-questions">Odśwież</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group" id="questions-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.socket.io/4.5.2/socket.io.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const socket = io();
+
+    // --- Helper Functions ---
+    async function fetchApi(url, options = {}) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Błąd serwera');
+            }
+            return response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            alert('Wystąpił błąd: ' + error.message);
+        }
+    }
+
+    // --- Game Controls ---
+    const startGameBtn = document.getElementById('start-game');
+    const stopGameBtn = document.getElementById('stop-game');
+    const previewQrCodesBtn = document.getElementById('preview-qrcodes');
+    const minutesInput = document.getElementById('minutes-input');
+    const pauseTimerBtn = document.getElementById('pause-timer');
+    const timerDisplay = document.getElementById('game-timer');
+    
+    startGameBtn.addEventListener('click', () => {
+        const whiteCount = document.getElementById('white-codes-count').value;
+        const redCount = document.getElementById('red-codes-count').value;
+        const minutes = minutesInput.value;
+        
+        fetchApi('/api/start_game', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                white_codes_count: whiteCount, 
+                red_codes_count: redCount,
+                minutes: minutes 
+            })
+        }).then(data => { if(data) alert(data.message) });
+    });
+
+    stopGameBtn.addEventListener('click', () => {
+        fetchApi('/api/stop_game', { method: 'POST' }).then(data => { if(data) alert(data.message) });
+    });
+
+    pauseTimerBtn.addEventListener('click', () => fetchApi('/api/game/time/pause', { method: 'POST' }));
+    previewQrCodesBtn.addEventListener('click', () => window.open('/qrcodes', '_blank'));
+
+    function updateControlsState(isGameActive, isTimerRunning) {
+        startGameBtn.disabled = isGameActive;
+        stopGameBtn.disabled = !isGameActive;
+        minutesInput.disabled = isGameActive;
+        pauseTimerBtn.disabled = !isGameActive;
+        if (isGameActive) pauseTimerBtn.textContent = isTimerRunning ? 'Pauza' : 'Wznów';
+    }
+
+    socket.on('game_state_update', (state) => updateControlsState(state.game_active, state.is_timer_running));
+    socket.on('timer_tick', (data) => {
+        const timeLeft = Math.floor(data.time_left);
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    });
+    socket.on('timer_paused', () => pauseTimerBtn.textContent = 'Wznów');
+    socket.on('timer_started', () => pauseTimerBtn.textContent = 'Pauza');
+
+    // --- Players Tab ---
+    const refreshPlayersBtn = document.getElementById('refresh-players');
+    const playersList = document.getElementById('players-list');
+    function loadPlayers() {
+        fetchApi('/api/players').then(players => {
+            playersList.innerHTML = '';
+            if (!players || players.length === 0) {
+                playersList.innerHTML = '<tr><td colspan="5" class="text-center">Brak graczy</td></tr>';
+                return;
+            }
+            players.forEach(player => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${player.id}</td><td>${player.name}</td><td>${player.score}</td><td>${player.warnings}</td><td><button class="btn btn-sm btn-warning" onclick="warnPlayer(${player.id})">Ostrzeżenie</button> <button class="btn btn-sm btn-danger" onclick="deletePlayer(${player.id})">Usuń</button></td>`;
+                playersList.appendChild(tr);
+            });
+        });
+    }
+    window.warnPlayer = (playerId) => fetchApi(`/api/players/${playerId}/warn`, { method: 'POST' }).then(loadPlayers);
+    window.deletePlayer = (playerId) => { if (confirm('Czy na pewno?')) fetchApi(`/api/players/${playerId}`, { method: 'DELETE' }).then(loadPlayers); };
+    refreshPlayersBtn.addEventListener('click', loadPlayers);
+
+    // --- Competitions Tab ---
+    const addAnswerBtn = document.getElementById('add-answer');
+    const answersContainer = document.getElementById('answers-container');
+    const addQuestionForm = document.getElementById('add-question-form');
+    const refreshQuestionsBtn = document.getElementById('refresh-questions');
+    const questionsList = document.getElementById('questions-list');
+    const toggleTetrisBtn = document.getElementById('toggle-tetris');
+    const testTetrisBtn = document.getElementById('test-tetris');
+    const tetrisPreviewContainer = document.getElementById('tetris-preview-container');
+
+    // Tetris Management
+    function updateTetrisButton(isActive) {
+        if (isActive) {
+            toggleTetrisBtn.textContent = 'Dezaktywuj';
+            toggleTetrisBtn.classList.remove('btn-outline-success');
+            toggleTetrisBtn.classList.add('btn-outline-danger');
+        } else {
+            toggleTetrisBtn.textContent = 'Aktywuj';
+            toggleTetrisBtn.classList.remove('btn-outline-danger');
+            toggleTetrisBtn.classList.add('btn-outline-success');
+        }
+    }
+    
+    toggleTetrisBtn.addEventListener('click', async () => {
+        const currentText = toggleTetrisBtn.textContent;
+        const newState = currentText === 'Aktywuj';
+        const response = await fetchApi('/api/competition/tetris', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ active: newState })
+        });
+        if (response) updateTetrisButton(response.tetris_active);
+    });
+    
+    testTetrisBtn.addEventListener('click', () => {
+        tetrisPreviewContainer.style.display = tetrisPreviewContainer.style.display === 'none' ? 'block' : 'none';
+        if (tetrisPreviewContainer.style.display === 'block') {
+            startHostTetris();
+        }
+    });
+
+    // Question Management
+    function createAnswerField(index) {
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        const letter = String.fromCharCode(97 + index);
+        div.innerHTML = `<div class="input-group-text"><input class="form-check-input mt-0" type="radio" name="correct-answer" value="${letter}" required></div><input type="text" class="form-control" placeholder="Odpowiedź ${letter.toUpperCase()}" required><button type="button" class="btn btn-outline-danger btn-remove-answer">×</button>`;
+        answersContainer.appendChild(div);
+        div.querySelector('.btn-remove-answer').addEventListener('click', () => {
+            div.remove();
+            answersContainer.querySelectorAll('.input-group').forEach((field, i) => {
+                const newLetter = String.fromCharCode(97 + i);
+                field.querySelector('input[type=radio]').value = newLetter;
+                field.querySelector('input[type=text]').placeholder = `Odpowiedź ${newLetter.toUpperCase()}`;
+            });
+        });
+    }
+    addAnswerBtn.addEventListener('click', () => { if (answersContainer.children.length < 3) createAnswerField(answersContainer.children.length); });
+
+    addQuestionForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const questionText = document.getElementById('question-text').value;
+        const letter = document.getElementById('letter-to-reveal').value;
+        const answers = Array.from(answersContainer.querySelectorAll('input[type=text]')).map(i => i.value);
+        const correctAnswer = answersContainer.querySelector('input[type=radio]:checked')?.value;
+        if (!questionText || !letter || answers.length < 2 || !correctAnswer) return alert('Wypełnij wszystkie pola.');
+        
+        fetchApi('/api/questions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: questionText, answers, correctAnswer, letterToReveal: letter.toUpperCase() })
+        }).then(data => {
+            if (data?.status === 'success') {
+                addQuestionForm.reset();
+                answersContainer.innerHTML = '';
+                createAnswerField(0); createAnswerField(1);
+                loadQuestions();
+            }
+        });
+    });
+
+    function loadQuestions() {
+        fetchApi('/api/questions').then(questions => {
+            questionsList.innerHTML = '';
+            if (!questions || questions.length === 0) {
+                questionsList.innerHTML = '<div class="list-group-item">Brak pytań.</div>';
+                return;
+            }
+            questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'list-group-item';
+                let answersHtml = q.answers.map((ans, i) => `<p class="${String.fromCharCode(97 + i) === q.correctAnswer ? 'fw-bold text-success' : ''}">${String.fromCharCode(97 + i).toUpperCase()}. ${ans}</p>`).join('');
+                div.innerHTML = `<div class="d-flex w-100 justify-content-between"><h6 class="mb-1">${q.text}</h6><small>Odkrywa: ${q.letterToReveal}</small></div>${answersHtml}<button class="btn btn-sm btn-danger" onclick="deleteQuestion(${q.id})">Usuń</button>`;
+                questionsList.appendChild(div);
+            });
+        });
+    }
+    window.deleteQuestion = (id) => { if (confirm('Na pewno?')) fetchApi(`/api/questions/${id}`, { method: 'DELETE' }).then(loadQuestions); };
+    refreshQuestionsBtn.addEventListener('click', loadQuestions);
+    createAnswerField(0); createAnswerField(1);
+
+    // --- Tab Loading ---
+    document.querySelector('button[data-bs-target="#players"]').addEventListener('shown.bs.tab', loadPlayers);
+    document.querySelector('button[data-bs-target="#competitions"]').addEventListener('shown.bs.tab', () => {
+        loadQuestions();
+        fetchApi('/api/competition/tetris').then(data => updateTetrisButton(data.tetris_active));
+    });
+
+    // --- Initial Load ---
+    fetchApi('/api/game/state').then(state => {
+        updateControlsState(state.game_active, state.is_timer_running);
+        const timeLeft = Math.floor(state.time_left);
+        timerDisplay.textContent = `${Math.floor(timeLeft / 60).toString().padStart(2, '0')}:${(timeLeft % 60).toString().padStart(2, '0')}`;
+    });
+
+    // --- TETRIS PREVIEW LOGIC ---
+    const canvas = document.getElementById('tetris-preview-canvas');
+    const context = canvas.getContext('2d');
+    const COLS = 12, ROWS = 20, BLOCK_SIZE = 20;
+    let grid, currentPiece, animationFrameId, lastTime = 0, dropCounter = 0, dropInterval = 1000;
+    const shapes = [[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]]];
+    const colors = ['#000', '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
+
+    function draw() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        grid.forEach((row, r) => row.forEach((val, c) => { if (val) { context.fillStyle = colors[val]; context.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE); }}));
+        if (currentPiece) {
+            context.fillStyle = colors[currentPiece.colorId];
+            currentPiece.shape.forEach((row, y) => row.forEach((val, x) => { if (val) context.fillRect((currentPiece.x + x) * BLOCK_SIZE, (currentPiece.y + y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE); }));
+        }
+    }
+    function update(time = 0) {
+        const deltaTime = time - lastTime;
+        lastTime = time;
+        dropCounter += deltaTime;
+        if (dropCounter > dropInterval) {
+            if(currentPiece) currentPiece.y++;
+            dropCounter = 0;
+        }
+
+        if (!currentPiece || currentPiece.y > ROWS-2) {
+            currentPiece = { x: 4, y: 0, shape: shapes[Math.floor(Math.random()*shapes.length)], colorId: Math.floor(Math.random()*7)+1 };
+        }
+        draw();
+        animationFrameId = requestAnimationFrame(update);
+    }
+    function startHostTetris() {
+        grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+        currentPiece = null;
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        update();
+    }
+});
+</script>
+{% endblock %}
+
