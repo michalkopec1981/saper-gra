@@ -6,3 +6,4 @@ Flask-SocketIO==5.3.3
 eventlet==0.33.1
 gunicorn==20.1.0
 psycopg2-binary
+dnspython<2.0
