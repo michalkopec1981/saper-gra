@@ -19,4 +19,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Bezpośrednia komenda uruchamiająca aplikację
-CMD ["gunicorn", "--worker-class", "sync", "--bind", "0.0.0.0:$PORT", "app:app"]
+CMD ["gunicorn", "--worker-class", "sync", "--bind", "0.0.0.0:8000", "app:app"]
