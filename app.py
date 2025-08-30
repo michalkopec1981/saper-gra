@@ -9,7 +9,14 @@ import random
 # Initialize Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'bardzo-tajny-klucz-super-bezpieczny'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
+# Ścieżka do bazy danych w trwałym wolumenie Render
+# Render montuje dyski w /var/data
+DB_DIR = '/var/data' 
+DB_PATH = os.path.join(DB_DIR, 'db.sqlite3')
+
+# Render sam tworzy folder, więc nie musimy go sprawdzać
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 socketio = SocketIO(app)
@@ -356,4 +363,5 @@ if __name__ == '__main__':
         db.session.commit()
     socketio.start_background_task(target=update_timer)
     socketio.run(app, debug=True)
+
 
