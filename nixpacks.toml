@@ -1,0 +1,13 @@
+# Plik konfiguracyjny dla Railway, który rozwiązuje problem z budowaniem
+
+# Określamy, jakich dostawców używamy.
+# Na podstawie pliku runtime.txt widzę, że używasz Pythona.
+[providers]
+python = "3.9" # Możesz dostosować wersję, jeśli jest inna
+
+# Definiujemy fazę instalacji (setup).
+[phases.setup]
+# Lista dodatkowych pakietów systemowych, które Railway ma zainstalować.
+# Dodajemy poprawną nazwę pakietu "postgresql_16".
+pkgs = ["gcc", "postgresql_16"]
+
