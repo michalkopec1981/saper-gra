@@ -355,18 +355,20 @@ def handle_connect():
     emit('game_state_update', get_full_game_state())
     emit_leaderboard_update()
 
-if __name__ == '__main__':
+# Ta funkcja pozwoli Gunicornowi zainicjować bazę danych przy starcie
+def create_tables():
     with app.app_context():
         db.create_all()
-        # --- DODANA INICJALIZACJA STANU TETRISA ---
         if not GameState.query.filter_by(key='game_active').first(): db.session.add(GameState(key='game_active', value='False'))
         if not GameState.query.filter_by(key='password').first(): db.session.add(GameState(key='password', value='SAPEREVENT'))
         if not GameState.query.filter_by(key='tetris_active').first(): db.session.add(GameState(key='tetris_active', value='False'))
         db.session.commit()
+
+# Ta część uruchomi się TYLKO, gdy odpalisz aplikację lokalnie (`python app.py`)
+# Gunicorn zignoruje ten fragment, co jest dokładnie tym, czego chcemy
+if __name__ == '__main__':
+    create_tables()
     socketio.start_background_task(target=update_timer)
-  if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8000)
-
-
+    socketio.run(app, debug=True, host='0.0.0.0', port=8000)
 
 
