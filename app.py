@@ -370,5 +370,4 @@ if __name__ == '__main__':
     create_tables()
     socketio.start_background_task(target=update_timer)
     socketio.run(app, debug=True, host='0.0.0.0', port=8000)
-
-
+    
