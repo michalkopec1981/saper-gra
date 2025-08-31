@@ -1,9 +1,0 @@
-# Plik konfiguracyjny dla Railway, który rozwiązuje problem z budowaniem
-
-# Poprawiona sekcja 'providers'. Teraz jest to lista.
-# Railway automatycznie wykryje wersję z pliku runtime.txt.
-providers = ["python"]
-
-# Definiujemy fazę instalacji (setup).
-[phases.setup]
-nixPkgs = ["gcc", "postgresql_16", "python39"]
