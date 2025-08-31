@@ -364,7 +364,9 @@ if __name__ == '__main__':
         if not GameState.query.filter_by(key='tetris_active').first(): db.session.add(GameState(key='tetris_active', value='False'))
         db.session.commit()
     socketio.start_background_task(target=update_timer)
-    socketio.run(app, debug=True)
+  if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=8000)
+
 
 
 
